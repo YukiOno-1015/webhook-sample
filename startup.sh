@@ -38,17 +38,23 @@ echo "Setting up log directory..."
 sudo mkdir -p /var/log/zoom/logs
 sudo chown -R $USER:$USER /var/log/zoom/logs
 
-# systemdサービスユニットファイルの作成
+# systemdサービスユニットファイルの作成または再作成
+SERVICE_FILE="/etc/systemd/system/zoom-webhook.service"
+if [ -f "$SERVICE_FILE" ]; then
+    echo "Removing existing systemd service unit file..."
+    sudo rm "$SERVICE_FILE"
+fi
+
 echo "Creating systemd service unit file..."
-sudo bash -c 'cat << EOF > /etc/systemd/system/zoom-webhook.service
+sudo bash -c "cat << EOF > /etc/systemd/system/zoom-webhook.service
 [Unit]
 Description=Zoom Webhook Node.js Application
 After=network.target
 
 [Service]
 Environment=NODE_PORT=4000
-WorkingDirectory='$APP_DIR'
-ExecStart=/usr/bin/node '$APP_DIR'/app.js
+WorkingDirectory=$APP_DIR
+ExecStart=/usr/bin/npm start
 Restart=always
 RestartSec=10
 User=honoka
@@ -61,7 +67,7 @@ ExecStartPre=/bin/chown -R honoka:honoka /var/log/zoom/logs
 
 [Install]
 WantedBy=multi-user.target
-EOF'
+EOF"
 
 # systemdデーモンをリロードしてサービスを有効化および起動
 echo "Reloading systemd daemon and starting the service..."
